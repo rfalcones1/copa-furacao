@@ -3,22 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Copa Furacão</title>
+<title>Copa Furacão PRO</title>
 
 <style>
 body {
-  font-family: Arial;
-  background: #111;
-  color: #fff;
   margin: 0;
+  font-family: Arial;
+  background: #0b0b0b;
+  color: #fff;
 }
 
 header {
-  background: #c8102e;
+  background: linear-gradient(90deg,#c8102e,#8b0000);
   padding: 15px;
   text-align: center;
-  font-size: 20px;
   font-weight: bold;
+  font-size: 20px;
+}
+
+.tabs {
+  display: flex;
+  background: #111;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: #c8102e;
 }
 
 .container {
@@ -44,8 +60,12 @@ button {
   font-weight: bold;
 }
 
+.section {
+  margin-top: 20px;
+}
+
 .game {
-  margin-top: 15px;
+  margin-top: 10px;
   padding: 10px;
   border-radius: 5px;
 }
@@ -53,20 +73,59 @@ button {
 .win { background: #2ecc71; }
 .draw { background: #f1c40f; }
 .loss { background: #e74c3c; }
+
+.table {
+  margin-top: 10px;
+  background: #111;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.player-list span {
+  display: inline-block;
+  background: #333;
+  padding: 5px;
+  margin: 3px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.player-list span.active {
+  background: #c8102e;
+}
 </style>
 
 </head>
 
 <body>
 
-<header>Copa Furacão</header>
+<header>Copa Furacão PRO</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="trocarCategoria('sub11', this)">Sub11</div>
+  <div class="tab" onclick="trocarCategoria('sub13', this)">Sub13</div>
+</div>
 
 <div class="container">
 
+<div class="section">
+<h3>Cadastrar Adversário</h3>
+<input id="novoTime" placeholder="Nome do time">
+<button onclick="addTime()">Adicionar</button>
+<div id="listaTimes"></div>
+</div>
+
+<div class="section">
+<h3>Cadastrar Jogadores</h3>
+<input id="novoJogador" placeholder="Nome do jogador">
+<button onclick="addJogador()">Adicionar</button>
+<div id="listaJogadores"></div>
+</div>
+
+<div class="section">
 <h3>Novo Jogo</h3>
 
-<input id="timeA" placeholder="Time A">
-<input id="timeB" placeholder="Time B">
+<select id="timeA"></select>
+<select id="timeB"></select>
 
 <input id="golsA" type="number" placeholder="Gols Time A">
 <input id="golsB" type="number" placeholder="Gols Time B">
@@ -77,28 +136,73 @@ button {
 </select>
 
 <input id="craque" placeholder="Craque da partida">
-<input id="escalacao" placeholder="Escalação (separar por vírgula)">
+
+<h4>Convocados</h4>
+<div id="convocados" class="player-list"></div>
 
 <label>
-  <input type="checkbox" id="jogoCompleto">
-  Goleiro jogou o jogo todo
+  <input type="checkbox" id="completo">
+  Falcão jogo completo
 </label>
 
 <button onclick="addGame()">Salvar Jogo</button>
+</div>
 
+<div class="section">
+<h3>Tabela</h3>
+<div id="tabela" class="table"></div>
+</div>
+
+<div class="section">
 <h3>Jogos</h3>
 <div id="games"></div>
+</div>
 
 </div>
 
 <script>
-let games = JSON.parse(localStorage.getItem("games")) || [];
+let categoria = "sub11";
 
-function save() {
-  localStorage.setItem("games", JSON.stringify(games));
+let dados = JSON.parse(localStorage.getItem("dadosPRO")) || {
+  sub11: { times: [], jogadores: [], jogos: [] },
+  sub13: { times: [], jogadores: [], jogos: [] }
+};
+
+function salvar() {
+  localStorage.setItem("dadosPRO", JSON.stringify(dados));
+}
+
+function trocarCategoria(cat, el) {
+  categoria = cat;
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+  render();
+}
+
+function addTime() {
+  let nome = novoTime.value.trim();
+  if (!nome) return;
+  dados[categoria].times.push(nome);
+  novoTime.value = "";
+  salvar();
+  render();
+}
+
+function addJogador() {
+  let nome = novoJogador.value.trim();
+  if (!nome) return;
+  dados[categoria].jogadores.push(nome);
+  novoJogador.value = "";
+  salvar();
+  render();
 }
 
 function addGame() {
+  let convocados = [];
+  document.querySelectorAll("#convocados span.active").forEach(el => {
+    convocados.push(el.innerText);
+  });
+
   let g = {
     timeA: timeA.value,
     timeB: timeB.value,
@@ -106,40 +210,110 @@ function addGame() {
     golsB: Number(golsB.value),
     local: local.value,
     craque: craque.value,
-    escalacao: escalacao.value,
-    completo: jogoCompleto.checked
+    convocados,
+    completo: completo.checked
   };
 
-  games.push(g);
-  save();
+  dados[categoria].jogos.push(g);
+  salvar();
   render();
 }
 
 function render() {
+  let d = dados[categoria];
+
+  listaTimes.innerHTML = d.times.map(t => `<div>${t}</div>`).join("");
+  timeA.innerHTML = d.times.map(t => `<option>${t}</option>`).join("");
+  timeB.innerHTML = d.times.map(t => `<option>${t}</option>`).join("");
+
+  listaJogadores.innerHTML = d.jogadores.map(j => `<div>${j}</div>`).join("");
+
+  convocados.innerHTML = d.jogadores.map(j =>
+    `<span onclick="this.classList.toggle('active')">${j}</span>`
+  ).join("");
+
   let html = "";
-
-  games.forEach(g => {
+  d.jogos.forEach(g => {
     let classe = "draw";
-
     if (g.golsA > g.golsB) classe = "win";
     if (g.golsA < g.golsB) classe = "loss";
 
     html += `
       <div class="game ${classe}">
         <b>${g.timeA} ${g.golsA} x ${g.golsB} ${g.timeB}</b><br>
-        ${g.local} <br>
-        Craque: ${g.craque} <br>
-        Escalação: ${g.escalacao} <br>
-        ${g.completo ? "Goleiro jogou completo" : ""}
+        ${g.local}<br>
+        Craque: ${g.craque}<br>
+        Convocados: ${g.convocados.join(", ")}<br>
+        ${g.completo ? "Falcão jogo completo" : ""}
       </div>
     `;
   });
 
-  document.getElementById("games").innerHTML = html;
+  games.innerHTML = html;
+
+  let tabela = {};
+  d.times.forEach(t => {
+    tabela[t] = { pts: 0, gp: 0, gc: 0, v: 0, e: 0, d: 0 };
+  });
+
+  d.jogos.forEach(g => {
+    let A = tabela[g.timeA];
+    let B = tabela[g.timeB];
+    if (!A || !B) return;
+
+    A.gp += g.golsA;
+    A.gc += g.golsB;
+    B.gp += g.golsB;
+    B.gc += g.golsA;
+
+    if (g.golsA > g.golsB) {
+      A.pts += 3; A.v++;
+      B.d++;
+    } else if (g.golsA < g.golsB) {
+      B.pts += 3; B.v++;
+      A.d++;
+    } else {
+      A.pts++; B.pts++;
+      A.e++; B.e++;
+    }
+  });
+
+  let tabelaArray = Object.entries(tabela).map(([time, dados]) => ({
+    time,
+    ...dados,
+    saldo: dados.gp - dados.gc
+  }));
+
+  tabelaArray.sort((a,b) => b.pts - a.pts || b.saldo - a.saldo);
+
+  let tabelaHTML = `
+    <table style="width:100%;text-align:center">
+    <tr>
+      <th>Time</th><th>Pts</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th>
+    </tr>
+  `;
+
+  tabelaArray.forEach(t => {
+    tabelaHTML += `
+      <tr>
+        <td>${t.time}</td>
+        <td>${t.pts}</td>
+        <td>${t.v}</td>
+        <td>${t.e}</td>
+        <td>${t.d}</td>
+        <td>${t.gp}</td>
+        <td>${t.gc}</td>
+        <td>${t.saldo}</td>
+      </tr>
+    `;
+  });
+
+  tabelaHTML += "</table>";
+  document.getElementById("tabela").innerHTML = tabelaHTML;
 }
 
 render();
 </script>
 
 </body>
-</html> 
+</html>
