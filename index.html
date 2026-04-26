@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copa Furacão</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #111;
+  color: #fff;
+  margin: 0;
+}
+
+header {
+  background: #c8102e;
+  padding: 15px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.container {
+  padding: 15px;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+  border: none;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  background: #c8102e;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.game {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.win { background: #2ecc71; }
+.draw { background: #f1c40f; }
+.loss { background: #e74c3c; }
+</style>
+
+</head>
+
+<body>
+
+<header>Copa Furacão</header>
+
+<div class="container">
+
+<h3>Novo Jogo</h3>
+
+<input id="timeA" placeholder="Time A">
+<input id="timeB" placeholder="Time B">
+
+<input id="golsA" type="number" placeholder="Gols Time A">
+<input id="golsB" type="number" placeholder="Gols Time B">
+
+<select id="local">
+  <option value="Casa">Casa</option>
+  <option value="Fora">Fora</option>
+</select>
+
+<input id="craque" placeholder="Craque da partida">
+<input id="escalacao" placeholder="Escalação (separar por vírgula)">
+
+<label>
+  <input type="checkbox" id="jogoCompleto">
+  Goleiro jogou o jogo todo
+</label>
+
+<button onclick="addGame()">Salvar Jogo</button>
+
+<h3>Jogos</h3>
+<div id="games"></div>
+
+</div>
+
+<script>
+let games = JSON.parse(localStorage.getItem("games")) || [];
+
+function save() {
+  localStorage.setItem("games", JSON.stringify(games));
+}
+
+function addGame() {
+  let g = {
+    timeA: timeA.value,
+    timeB: timeB.value,
+    golsA: Number(golsA.value),
+    golsB: Number(golsB.value),
+    local: local.value,
+    craque: craque.value,
+    escalacao: escalacao.value,
+    completo: jogoCompleto.checked
+  };
+
+  games.push(g);
+  save();
+  render();
+}
+
+function render() {
+  let html = "";
+
+  games.forEach(g => {
+    let classe = "draw";
+
+    if (g.golsA > g.golsB) classe = "win";
+    if (g.golsA < g.golsB) classe = "loss";
+
+    html += `
+      <div class="game ${classe}">
+        <b>${g.timeA} ${g.golsA} x ${g.golsB} ${g.timeB}</b><br>
+        ${g.local} <br>
+        Craque: ${g.craque} <br>
+        Escalação: ${g.escalacao} <br>
+        ${g.completo ? "Goleiro jogou completo" : ""}
+      </div>
+    `;
+  });
+
+  document.getElementById("games").innerHTML = html;
+}
+
+render();
+</script>
+
+</body>
+</html>
