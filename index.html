@@ -6,94 +6,30 @@
 <title>Copa Furacão PRO</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #0b0b0b;
-  color: #fff;
-}
-
-header {
-  background: linear-gradient(90deg,#c8102e,#8b0000);
-  padding: 15px;
-  text-align: center;
-  font-weight: bold;
-  font-size: 20px;
-}
-
-.tabs {
-  display: flex;
-  background: #111;
-}
-
-.tab {
-  flex: 1;
-  text-align: center;
-  padding: 10px;
-  cursor: pointer;
-}
-
-.tab.active {
-  background: #c8102e;
-}
-
-.container {
-  padding: 15px;
-}
-
-input, select {
-  width: 100%;
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 5px;
-  border: none;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  background: #c8102e;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-weight: bold;
-}
-
-.section {
-  margin-top: 20px;
-}
-
-.game {
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 5px;
-}
-
-.win { background: #2ecc71; }
-.draw { background: #f1c40f; }
-.loss { background: #e74c3c; }
-
-.table {
-  margin-top: 10px;
-  background: #111;
-  padding: 10px;
-  border-radius: 5px;
-}
-
-.player-list span {
-  display: inline-block;
-  background: #333;
-  padding: 5px;
-  margin: 3px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-.player-list span.active {
-  background: #c8102e;
-}
+body{margin:0;font-family:Arial;background:#0b0b0b;color:white}
+header{background:linear-gradient(90deg,#c8102e,#750000);padding:16px;text-align:center;font-size:22px;font-weight:bold}
+.tabs{display:flex;background:#111;position:sticky;top:0;z-index:10}
+.tab{flex:1;text-align:center;padding:12px;font-weight:bold}
+.tab.active{background:#c8102e}
+.container{padding:15px}
+.section{background:#151515;margin-bottom:18px;padding:14px;border-radius:10px}
+h3{margin-top:0;color:#fff}
+label{display:block;margin-top:10px;font-weight:bold;color:#ddd}
+input,select,textarea{width:100%;padding:11px;margin-top:5px;border-radius:7px;border:none;box-sizing:border-box}
+button{width:100%;padding:13px;margin-top:12px;background:#c8102e;color:white;border:none;border-radius:8px;font-weight:bold}
+.small-btn{background:#333;margin-top:6px}
+.nav{display:flex;gap:6px;margin-bottom:15px}
+.nav button{margin:0;padding:10px;background:#333}
+.nav button.active{background:#c8102e}
+.game{margin-top:10px;padding:12px;border-radius:8px}
+.win{background:#16803a}
+.draw{background:#b7950b}
+.loss{background:#922b21}
+table{width:100%;text-align:center;border-collapse:collapse;font-size:13px}
+th,td{padding:6px;border-bottom:1px solid #333}
+th{color:#ffdddd}
+.badge{display:inline-block;background:#c8102e;padding:4px 7px;border-radius:5px;margin:2px}
 </style>
-
 </head>
 
 <body>
@@ -101,61 +37,93 @@ button {
 <header>Copa Furacão PRO</header>
 
 <div class="tabs">
-  <div class="tab active" onclick="trocarCategoria('sub11', this)">Sub11</div>
-  <div class="tab" onclick="trocarCategoria('sub13', this)">Sub13</div>
+  <div class="tab active" onclick="trocarCategoria('sub11',this)">Sub11</div>
+  <div class="tab" onclick="trocarCategoria('sub12',this)">Sub12</div>
+  <div class="tab" onclick="trocarCategoria('sub13',this)">Sub13</div>
 </div>
 
 <div class="container">
 
-<div class="section">
-<h3>Cadastrar Adversário</h3>
-<input id="novoTime" placeholder="Nome do time">
-<button onclick="addTime()">Adicionar</button>
-<div id="listaTimes"></div>
+<div class="nav">
+  <button class="active" onclick="mostrarTela('jogos',this)">Jogos</button>
+  <button onclick="mostrarTela('cadastros',this)">Cadastros</button>
+  <button onclick="mostrarTela('tabelaTela',this)">Tabela</button>
 </div>
 
-<div class="section">
-<h3>Cadastrar Jogadores</h3>
-<input id="novoJogador" placeholder="Nome do jogador">
-<button onclick="addJogador()">Adicionar</button>
-<div id="listaJogadores"></div>
+<div id="cadastros" style="display:none">
+
+  <div class="section">
+    <h3>Cadastro de adversários</h3>
+    <label>Nome do adversário</label>
+    <input id="novoTime" placeholder="Ex: Coritiba, Paraná, Escola X">
+    <button onclick="addTime()">Adicionar adversário</button>
+    <div id="listaTimes"></div>
+  </div>
+
+  <div class="section">
+    <h3>Cadastro de jogadores</h3>
+    <label>Nome do jogador</label>
+    <input id="novoJogador" placeholder="Ex: Vítor, João, Pedro">
+    <button onclick="addJogador()">Adicionar jogador</button>
+    <div id="listaJogadores"></div>
+  </div>
+
 </div>
 
-<div class="section">
-<h3>Novo Jogo</h3>
+<div id="jogos">
 
-<select id="timeA"></select>
-<select id="timeB"></select>
+  <div class="section">
+    <h3>Novo jogo</h3>
 
-<input id="golsA" type="number" placeholder="Gols Time A">
-<input id="golsB" type="number" placeholder="Gols Time B">
+    <label>Time A</label>
+    <input value="Furacão CL" disabled>
 
-<select id="local">
-  <option value="Casa">Casa</option>
-  <option value="Fora">Fora</option>
-</select>
+    <label>Adversário - Time B</label>
+    <select id="timeB"></select>
 
-<input id="craque" placeholder="Craque da partida">
+    <label>Gols Furacão CL</label>
+    <input id="golsA" type="number" placeholder="Ex: 2">
 
-<h4>Convocados</h4>
-<div id="convocados" class="player-list"></div>
+    <label>Gols adversário</label>
+    <input id="golsB" type="number" placeholder="Ex: 1">
 
-<label>
-  <input type="checkbox" id="completo">
-  Falcão jogo completo
-</label>
+    <label>Jogo em casa ou fora</label>
+    <select id="local">
+      <option value="Casa">Casa</option>
+      <option value="Fora">Fora</option>
+    </select>
 
-<button onclick="addGame()">Salvar Jogo</button>
+    <label>Craque da partida</label>
+    <select id="craque"></select>
+
+    <label>Convocados</label>
+    <select id="convocados" multiple size="6"></select>
+
+    <label>Escalação</label>
+    <textarea id="escalacao" placeholder="Digite a escalação ou observações"></textarea>
+
+    <label>
+      <input type="checkbox" id="completo">
+      Falcão jogo completo
+    </label>
+
+    <button onclick="addGame()">Salvar jogo</button>
+  </div>
+
+  <div class="section">
+    <h3>Jogos cadastrados</h3>
+    <div id="games"></div>
+  </div>
+
 </div>
 
-<div class="section">
-<h3>Tabela</h3>
-<div id="tabela" class="table"></div>
-</div>
+<div id="tabelaTela" style="display:none">
 
-<div class="section">
-<h3>Jogos</h3>
-<div id="games"></div>
+  <div class="section">
+    <h3>Tabela da categoria</h3>
+    <div id="tabela"></div>
+  </div>
+
 </div>
 
 </div>
@@ -163,113 +131,157 @@ button {
 <script>
 let categoria = "sub11";
 
-let dados = JSON.parse(localStorage.getItem("dadosPRO")) || {
-  sub11: { times: [], jogadores: [], jogos: [] },
-  sub13: { times: [], jogadores: [], jogos: [] }
+let dados = JSON.parse(localStorage.getItem("copaFuracaoPRO2")) || {
+  sub11:{times:[],jogadores:[],jogos:[]},
+  sub12:{times:[],jogadores:[],jogos:[]},
+  sub13:{times:[],jogadores:[],jogos:[]}
 };
 
-function salvar() {
-  localStorage.setItem("dadosPRO", JSON.stringify(dados));
+function salvar(){
+  localStorage.setItem("copaFuracaoPRO2",JSON.stringify(dados));
 }
 
-function trocarCategoria(cat, el) {
+function trocarCategoria(cat,el){
   categoria = cat;
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   el.classList.add("active");
   render();
 }
 
-function addTime() {
+function mostrarTela(id,el){
+  jogos.style.display="none";
+  cadastros.style.display="none";
+  tabelaTela.style.display="none";
+  document.getElementById(id).style.display="block";
+
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  el.classList.add("active");
+  render();
+}
+
+function addTime(){
   let nome = novoTime.value.trim();
-  if (!nome) return;
+  if(!nome)return;
   dados[categoria].times.push(nome);
-  novoTime.value = "";
+  novoTime.value="";
   salvar();
   render();
 }
 
-function addJogador() {
+function addJogador(){
   let nome = novoJogador.value.trim();
-  if (!nome) return;
+  if(!nome)return;
   dados[categoria].jogadores.push(nome);
-  novoJogador.value = "";
+  novoJogador.value="";
   salvar();
   render();
 }
 
-function addGame() {
-  let convocados = [];
-  document.querySelectorAll("#convocados span.active").forEach(el => {
-    convocados.push(el.innerText);
-  });
+function addGame(){
+  if(!timeB.value){
+    alert("Cadastre e selecione um adversário.");
+    return;
+  }
 
-  let g = {
-    timeA: timeA.value,
-    timeB: timeB.value,
-    golsA: Number(golsA.value),
-    golsB: Number(golsB.value),
-    local: local.value,
-    craque: craque.value,
-    convocados,
-    completo: completo.checked
+  let listaConvocados = Array.from(convocados.selectedOptions).map(o=>o.value);
+
+  let jogo = {
+    timeA:"Furacão CL",
+    timeB:timeB.value,
+    golsA:Number(golsA.value),
+    golsB:Number(golsB.value),
+    local:local.value,
+    craque:craque.value,
+    convocados:listaConvocados,
+    escalacao:escalacao.value,
+    completo:completo.checked
   };
 
-  dados[categoria].jogos.push(g);
+  dados[categoria].jogos.push(jogo);
+
+  golsA.value="";
+  golsB.value="";
+  craque.value="";
+  escalacao.value="";
+  completo.checked=false;
+
   salvar();
   render();
 }
 
-function render() {
+function excluirJogo(i){
+  if(confirm("Excluir este jogo?")){
+    dados[categoria].jogos.splice(i,1);
+    salvar();
+    render();
+  }
+}
+
+function render(){
   let d = dados[categoria];
 
-  listaTimes.innerHTML = d.times.map(t => `<div>${t}</div>`).join("");
-  timeA.innerHTML = d.times.map(t => `<option>${t}</option>`).join("");
-  timeB.innerHTML = d.times.map(t => `<option>${t}</option>`).join("");
+  listaTimes.innerHTML = d.times.map(t=>`<div class="badge">${t}</div>`).join("");
+  listaJogadores.innerHTML = d.jogadores.map(j=>`<div class="badge">${j}</div>`).join("");
 
-  listaJogadores.innerHTML = d.jogadores.map(j => `<div>${j}</div>`).join("");
+  timeB.innerHTML = '<option value="">Selecione o adversário</option>' +
+    d.times.map(t=>`<option value="${t}">${t}</option>`).join("");
 
-  convocados.innerHTML = d.jogadores.map(j =>
-    `<span onclick="this.classList.toggle('active')">${j}</span>`
-  ).join("");
+  craque.innerHTML = '<option value="">Selecione o craque</option>' +
+    d.jogadores.map(j=>`<option value="${j}">${j}</option>`).join("");
+
+  convocados.innerHTML =
+    d.jogadores.map(j=>`<option value="${j}">${j}</option>`).join("");
 
   let html = "";
-  d.jogos.forEach(g => {
+
+  d.jogos.forEach((g,i)=>{
     let classe = "draw";
-    if (g.golsA > g.golsB) classe = "win";
-    if (g.golsA < g.golsB) classe = "loss";
+    if(g.golsA > g.golsB) classe = "win";
+    if(g.golsA < g.golsB) classe = "loss";
 
     html += `
       <div class="game ${classe}">
         <b>${g.timeA} ${g.golsA} x ${g.golsB} ${g.timeB}</b><br>
-        ${g.local}<br>
-        Craque: ${g.craque}<br>
-        Convocados: ${g.convocados.join(", ")}<br>
-        ${g.completo ? "Falcão jogo completo" : ""}
+        Local: ${g.local}<br>
+        Craque: ${g.craque || "-"}<br>
+        Convocados: ${g.convocados.join(", ") || "-"}<br>
+        Escalação: ${g.escalacao || "-"}<br>
+        ${g.completo ? "Falcão jogou completo" : "Falcão não jogou completo"}<br>
+        <button class="small-btn" onclick="excluirJogo(${i})">Excluir jogo</button>
       </div>
     `;
   });
 
-  games.innerHTML = html;
+  games.innerHTML = html || "Nenhum jogo cadastrado ainda.";
 
-  let tabela = {};
-  d.times.forEach(t => {
-    tabela[t] = { pts: 0, gp: 0, gc: 0, v: 0, e: 0, d: 0 };
+  montarTabela();
+}
+
+function montarTabela(){
+  let d = dados[categoria];
+
+  let tabelaTimes = {
+    "Furacão CL":{j:0,pts:0,v:0,e:0,d:0,gp:0,gc:0}
+  };
+
+  d.times.forEach(t=>{
+    tabelaTimes[t]={j:0,pts:0,v:0,e:0,d:0,gp:0,gc:0};
   });
 
-  d.jogos.forEach(g => {
-    let A = tabela[g.timeA];
-    let B = tabela[g.timeB];
-    if (!A || !B) return;
+  d.jogos.forEach(g=>{
+    let A = tabelaTimes["Furacão CL"];
+    let B = tabelaTimes[g.timeB];
 
-    A.gp += g.golsA;
-    A.gc += g.golsB;
-    B.gp += g.golsB;
-    B.gc += g.golsA;
+    if(!B)return;
 
-    if (g.golsA > g.golsB) {
+    A.j++; B.j++;
+    A.gp += g.golsA; A.gc += g.golsB;
+    B.gp += g.golsB; B.gc += g.golsA;
+
+    if(g.golsA > g.golsB){
       A.pts += 3; A.v++;
       B.d++;
-    } else if (g.golsA < g.golsB) {
+    } else if(g.golsA < g.golsB){
       B.pts += 3; B.v++;
       A.d++;
     } else {
@@ -278,38 +290,47 @@ function render() {
     }
   });
 
-  let tabelaArray = Object.entries(tabela).map(([time, dados]) => ({
+  let arr = Object.entries(tabelaTimes).map(([time,t])=>({
     time,
-    ...dados,
-    saldo: dados.gp - dados.gc
+    ...t,
+    sg:t.gp-t.gc
   }));
 
-  tabelaArray.sort((a,b) => b.pts - a.pts || b.saldo - a.saldo);
+  arr.sort((a,b)=>b.pts-a.pts || b.sg-a.sg || b.gp-a.gp);
 
-  let tabelaHTML = `
-    <table style="width:100%;text-align:center">
-    <tr>
-      <th>Time</th><th>Pts</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th>
-    </tr>
+  let html = `
+    <table>
+      <tr>
+        <th>Time</th>
+        <th>J</th>
+        <th>Pts</th>
+        <th>V</th>
+        <th>E</th>
+        <th>D</th>
+        <th>GP</th>
+        <th>GC</th>
+        <th>SG</th>
+      </tr>
   `;
 
-  tabelaArray.forEach(t => {
-    tabelaHTML += `
+  arr.forEach(t=>{
+    html += `
       <tr>
         <td>${t.time}</td>
+        <td>${t.j}</td>
         <td>${t.pts}</td>
         <td>${t.v}</td>
         <td>${t.e}</td>
         <td>${t.d}</td>
         <td>${t.gp}</td>
         <td>${t.gc}</td>
-        <td>${t.saldo}</td>
+        <td>${t.sg}</td>
       </tr>
     `;
   });
 
-  tabelaHTML += "</table>";
-  document.getElementById("tabela").innerHTML = tabelaHTML;
+  html += "</table>";
+  tabela.innerHTML = html;
 }
 
 render();
