@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Copa Furacão Elite</title>
+<title>Copa Furacão</title>
 
 <style>
 body{margin:0;font-family:Arial;background:#080808;color:white}
-header{background:linear-gradient(90deg,#c8102e,#610000);padding:16px;text-align:center;font-size:22px;font-weight:bold}
+header{background:#c8102e;padding:16px;text-align:center;font-size:22px;font-weight:bold}
 .tabs,.nav{display:flex;background:#111}
 .tab,.nav button{flex:1;padding:12px;font-weight:bold;border:none;color:white;background:#222}
 .tab.active,.nav button.active{background:#c8102e}
@@ -16,22 +16,21 @@ header{background:linear-gradient(90deg,#c8102e,#610000);padding:16px;text-align
 label{display:block;margin-top:10px;font-weight:bold;color:#ddd;text-transform:uppercase;font-size:13px}
 input,select{width:100%;padding:12px;margin-top:5px;border-radius:10px;border:none;font-size:16px;text-align:center;box-sizing:border-box}
 button{width:100%;padding:14px;margin-top:14px;background:#c8102e;color:white;border:none;border-radius:10px;font-weight:bold}
+.game{background:#222;margin-top:10px;padding:12px;border-radius:9px}
 .field{background:#126b35;border:3px solid white;border-radius:18px;padding:14px;margin-top:10px}
 .pos{background:rgba(255,255,255,.15);border:1px solid white;border-radius:12px;padding:10px;margin:8px 0;text-align:center}
 .pos-title{font-weight:bold;margin-bottom:6px}
-.game{background:#222;margin-top:10px;padding:12px;border-radius:9px}
-.badge{background:#c8102e;padding:5px 8px;border-radius:6px;margin:3px;display:inline-block}
-table{width:100%;border-collapse:collapse;text-align:center}
-th,td{padding:7px;border-bottom:1px solid #333}
-.sharebox{word-break:break-all;background:#222;padding:10px;border-radius:8px;margin-top:10px}
 .readonly{background:#004d22;padding:10px;text-align:center;font-weight:bold}
+.sharebox{word-break:break-all;background:#222;padding:10px;border-radius:8px;margin-top:10px}
+table{width:100%;border-collapse:collapse;text-align:center;font-size:13px}
+th,td{padding:7px;border-bottom:1px solid #333}
 </style>
 </head>
 
 <body>
 
-<header>Copa Furacão Elite</header>
-<div id="modoLeituraAviso"></div>
+<header>Copa Furacão</header>
+<div id="aviso"></div>
 
 <div class="tabs">
   <div class="tab active" onclick="trocarCategoria('sub11',this)">Sub11</div>
@@ -42,22 +41,23 @@ th,td{padding:7px;border-bottom:1px solid #333}
 <div class="container">
 
 <div class="nav">
-  <button class="active" onclick="mostrarTela('jogos',this)">Jogos</button>
-  <button id="btnCadastros" onclick="mostrarTela('cadastros',this)">Cadastros</button>
-  <button onclick="mostrarTela('tabelaTela',this)">Tabela</button>
-  <button id="btnCompartilhar" onclick="mostrarTela('compartilharTela',this)">Compartilhar</button>
+  <button class="active" onclick="mostrar('jogos',this)">Jogos</button>
+  <button id="btnCad" onclick="mostrar('cadastros',this)">Cadastros</button>
+  <button onclick="mostrar('tabelaTela',this)">Tabela</button>
+  <button id="btnFalcao" onclick="mostrar('falcao',this)">Falcão</button>
+  <button id="btnShare" onclick="mostrar('share',this)">Compartilhar</button>
 </div>
 
 <div id="cadastros" style="display:none">
   <div class="section">
-    <h3>Adversários</h3>
+    <h3>Cadastro de adversários</h3>
     <input id="novoTime" placeholder="Nome do adversário">
     <button onclick="addTime()">Adicionar adversário</button>
     <div id="listaTimes"></div>
   </div>
 
   <div class="section">
-    <h3>Jogadores</h3>
+    <h3>Cadastro de jogadores</h3>
     <input id="novoJogador" placeholder="Nome do jogador">
     <button onclick="addJogador()">Adicionar jogador</button>
     <div id="listaJogadores"></div>
@@ -111,12 +111,44 @@ th,td{padding:7px;border-bottom:1px solid #333}
   </div>
 </div>
 
-<div id="compartilharTela" style="display:none">
+<div id="falcao" style="display:none">
+  <div id="formFalcao" class="section">
+    <h3>Registro Falcão</h3>
+
+    <label>Selecionar jogo</label>
+    <select id="jogoSel"></select>
+
+    <label>
+      <input type="checkbox" id="comp">
+      Jogo completo
+    </label>
+
+    <label>Gols sofridos Falcão</label>
+    <select id="gF"></select>
+
+    <label>Gols sofridos outro goleiro</label>
+    <select id="gO"></select>
+
+    <button onclick="salvarFalcao()">Salvar desempenho</button>
+  </div>
+
   <div class="section">
-    <h3>Compartilhar informações</h3>
-    <p>Gera um link somente leitura com jogos, escalação e tabela. Quem abrir não poderá editar.</p>
-    <button onclick="gerarLinkCompartilhamento()">Gerar link de compartilhamento</button>
-    <div id="linkCompartilhar" class="sharebox"></div>
+    <h3>Resumo Falcão por categoria</h3>
+    <div id="res"></div>
+  </div>
+</div>
+
+<div id="share" style="display:none">
+  <div class="section">
+    <h3>Compartilhar</h3>
+
+    <label>
+      <input type="checkbox" id="shareFalcao">
+      Compartilhar aba Falcão
+    </label>
+
+    <button onclick="gerar()">Gerar link somente leitura</button>
+    <div id="link" class="sharebox"></div>
   </div>
 </div>
 
@@ -124,57 +156,65 @@ th,td{padding:7px;border-bottom:1px solid #333}
 
 <script>
 let categoria="sub11";
-let modoLeitura=false;
+let leitura=false;
+let permiteFalcao=true;
 
-let dados=JSON.parse(localStorage.getItem("copaFuracaoElite"))||{
+let dados=JSON.parse(localStorage.getItem("copaFuracaoFinal"))||{
   sub11:{times:[],jogadores:[],jogos:[]},
   sub12:{times:[],jogadores:[],jogos:[]},
   sub13:{times:[],jogadores:[],jogos:[]}
 };
 
-function carregarCompartilhado(){
-  let params=new URLSearchParams(window.location.search);
-  let share=params.get("share");
+function salvar(){
+  if(!leitura)localStorage.setItem("copaFuracaoFinal",JSON.stringify(dados));
+}
 
-  if(share){
+function carregar(){
+  let p=new URLSearchParams(location.search);
+  let s=p.get("share");
+  let f=p.get("falcao");
+
+  if(s){
     try{
-      let json=decodeURIComponent(escape(atob(share)));
-      dados=JSON.parse(json);
-      modoLeitura=true;
+      dados=JSON.parse(decodeURIComponent(escape(atob(s))));
+      leitura=true;
+      permiteFalcao = f==="sim";
 
-      modoLeituraAviso.innerHTML='<div class="readonly">Modo compartilhado: somente leitura</div>';
-      btnCadastros.style.display="none";
-      btnCompartilhar.style.display="none";
+      aviso.innerHTML='<div class="readonly">Modo compartilhado: somente leitura</div>';
+      btnCad.style.display="none";
+      btnShare.style.display="none";
       formJogo.style.display="none";
+
+      if(!permiteFalcao){
+        btnFalcao.style.display="none";
+      }else{
+        formFalcao.style.display="none";
+      }
     }catch(e){
-      alert("Link de compartilhamento inválido.");
+      alert("Link inválido.");
     }
   }
 }
 
-function salvar(){
-  if(!modoLeitura){
-    localStorage.setItem("copaFuracaoElite",JSON.stringify(dados));
-  }
-}
-
-function trocarCategoria(cat,el){
-  categoria=cat;
+function trocarCategoria(c,el){
+  categoria=c;
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   el.classList.add("active");
   render();
 }
 
-function mostrarTela(id,el){
+function mostrar(id,el){
   jogos.style.display="none";
   cadastros.style.display="none";
   tabelaTela.style.display="none";
-  compartilharTela.style.display="none";
+  falcao.style.display="none";
+  share.style.display="none";
 
   document.getElementById(id).style.display="block";
 
   document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
   el.classList.add("active");
+
   render();
 }
 
@@ -201,9 +241,15 @@ function opcoesJogadores(){
   dados[categoria].jogadores.map(j=>`<option value="${j}">${j}</option>`).join("");
 }
 
+function opcoesGols(){
+  let h="";
+  for(let i=0;i<=20;i++)h+=`<option value="${i}">${i}</option>`;
+  return h;
+}
+
 function addGame(){
   if(!timeB.value){
-    alert("Selecione o adversário");
+    alert("Selecione o adversário.");
     return;
   }
 
@@ -220,7 +266,10 @@ function addGame(){
       alaDir:alaDir.value,
       meia:meia.value,
       atacante:atacante.value
-    }
+    },
+    falcaoCompleto:false,
+    gF:0,
+    gO:0
   };
 
   dados[categoria].jogos.push(jogo);
@@ -231,8 +280,24 @@ function addGame(){
   render();
 }
 
+function salvarFalcao(){
+  let i=jogoSel.value;
+  if(i===""){
+    alert("Selecione um jogo.");
+    return;
+  }
+
+  dados[categoria].jogos[i].falcaoCompleto=comp.checked;
+  dados[categoria].jogos[i].gF=Number(gF.value);
+  dados[categoria].jogos[i].gO=Number(gO.value);
+
+  salvar();
+  render();
+  alert("Desempenho salvo!");
+}
+
 function excluirJogo(i){
-  if(modoLeitura)return;
+  if(leitura)return;
   if(confirm("Excluir este jogo?")){
     dados[categoria].jogos.splice(i,1);
     salvar();
@@ -243,14 +308,15 @@ function excluirJogo(i){
 function render(){
   let d=dados[categoria];
 
-  if(!modoLeitura){
-    listaTimes.innerHTML=d.times.map(t=>`<span class="badge">${t}</span>`).join("");
-    listaJogadores.innerHTML=d.jogadores.map(j=>`<span class="badge">${j}</span>`).join("");
+  if(!leitura){
+    listaTimes.innerHTML=d.times.map(t=>`<p>${t}</p>`).join("");
+    listaJogadores.innerHTML=d.jogadores.map(j=>`<p>${j}</p>`).join("");
 
     timeB.innerHTML='<option value="">Selecione</option>'+
     d.times.map(t=>`<option value="${t}">${t}</option>`).join("");
 
     craque.innerHTML=opcoesJogadores();
+
     gol.innerHTML=opcoesJogadores();
     zagueiro.innerHTML=opcoesJogadores();
     volante.innerHTML=opcoesJogadores();
@@ -258,29 +324,34 @@ function render(){
     alaDir.innerHTML=opcoesJogadores();
     meia.innerHTML=opcoesJogadores();
     atacante.innerHTML=opcoesJogadores();
+
+    gF.innerHTML=opcoesGols();
+    gO.innerHTML=opcoesGols();
   }
 
-  let html="";
-  d.jogos.forEach((g,i)=>{
-    html+=`
-      <div class="game">
-        <b>Furacão CL ${g.golsA} x ${g.golsB} ${g.timeB}</b><br>
-        Craque: ${g.craque || "-"}<br><br>
-        <b>Escalação Furacão CL</b><br>
-        GOL: ${g.campo?.gol || "-"}<br>
-        ZAGUEIRO: ${g.campo?.zagueiro || "-"}<br>
-        VOLANTE: ${g.campo?.volante || "-"}<br>
-        ALA ESQ: ${g.campo?.alaEsq || "-"}<br>
-        ALA DIR: ${g.campo?.alaDir || "-"}<br>
-        MEIA: ${g.campo?.meia || "-"}<br>
-        ATACANTE: ${g.campo?.atacante || "-"}<br>
-        ${modoLeitura ? "" : `<button onclick="excluirJogo(${i})">Excluir jogo</button>`}
-      </div>
-    `;
-  });
+  jogoSel.innerHTML='<option value="">Selecione</option>'+
+  d.jogos.map((g,i)=>`<option value="${i}">Furacão CL ${g.golsA} x ${g.golsB} ${g.timeB}</option>`).join("");
 
-  games.innerHTML=html || "Nenhum jogo cadastrado.";
+  games.innerHTML=d.jogos.map((g,i)=>`
+    <div class="game">
+      <b>Furacão CL ${g.golsA} x ${g.golsB} ${g.timeB}</b><br>
+      Craque: ${g.craque || "-"}<br><br>
+
+      <b>Escalação Furacão CL</b><br>
+      GOL: ${g.campo?.gol || "-"}<br>
+      ZAGUEIRO: ${g.campo?.zagueiro || "-"}<br>
+      VOLANTE: ${g.campo?.volante || "-"}<br>
+      ALA ESQ: ${g.campo?.alaEsq || "-"}<br>
+      ALA DIR: ${g.campo?.alaDir || "-"}<br>
+      MEIA: ${g.campo?.meia || "-"}<br>
+      ATACANTE: ${g.campo?.atacante || "-"}<br>
+
+      ${leitura ? "" : `<button onclick="excluirJogo(${i})">Excluir jogo</button>`}
+    </div>
+  `).join("") || "Nenhum jogo cadastrado.";
+
   montarTabela();
+  montarResumoFalcao();
 }
 
 function montarTabela(){
@@ -302,16 +373,16 @@ function montarTabela(){
     let A=tabelaTimes["Furacão CL"];
     let B=tabelaTimes[g.timeB];
 
-    A.j++; B.j++;
-    A.gp+=g.golsA; A.gc+=g.golsB;
-    B.gp+=g.golsB; B.gc+=g.golsA;
+    A.j++;B.j++;
+    A.gp+=g.golsA;A.gc+=g.golsB;
+    B.gp+=g.golsB;B.gc+=g.golsA;
 
     if(g.golsA>g.golsB){
-      A.pts+=3; A.v++; B.d++;
+      A.pts+=3;A.v++;B.d++;
     }else if(g.golsA<g.golsB){
-      B.pts+=3; B.v++; A.d++;
+      B.pts+=3;B.v++;A.d++;
     }else{
-      A.pts++; B.pts++; A.e++; B.e++;
+      A.pts++;B.pts++;A.e++;B.e++;
     }
   });
 
@@ -321,53 +392,70 @@ function montarTabela(){
 
   arr.sort((a,b)=>b.pts-a.pts || b.sg-a.sg || b.gp-a.gp);
 
-  let html=`
+  tabela.innerHTML=`
     <table>
       <tr>
         <th>Time</th><th>J</th><th>Pts</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th>
       </tr>
+      ${arr.map(t=>`
+        <tr>
+          <td>${t.time}</td>
+          <td>${t.j}</td>
+          <td>${t.pts}</td>
+          <td>${t.v}</td>
+          <td>${t.e}</td>
+          <td>${t.d}</td>
+          <td>${t.gp}</td>
+          <td>${t.gc}</td>
+          <td>${t.sg}</td>
+        </tr>
+      `).join("")}
+    </table>
   `;
+}
 
-  arr.forEach(t=>{
+function montarResumoFalcao(){
+  let html="";
+
+  ["sub11","sub12","sub13"].forEach(cat=>{
+    let jogos=dados[cat].jogos;
+    let completos=jogos.filter(j=>j.falcaoCompleto).length;
+    let golsF=jogos.reduce((s,j)=>s+(j.gF||0),0);
+    let golsO=jogos.reduce((s,j)=>s+(j.gO||0),0);
+
     html+=`
-      <tr>
-        <td>${t.time}</td>
-        <td>${t.j}</td>
-        <td>${t.pts}</td>
-        <td>${t.v}</td>
-        <td>${t.e}</td>
-        <td>${t.d}</td>
-        <td>${t.gp}</td>
-        <td>${t.gc}</td>
-        <td>${t.sg}</td>
-      </tr>
+      <div class="game">
+        <h3>${cat.toUpperCase()}</h3>
+        Jogos completos: ${completos}<br>
+        Gols sofridos Falcão: ${golsF}<br>
+        Gols sofridos outro goleiro: ${golsO}
+      </div>
     `;
   });
 
-  html+="</table>";
-  tabela.innerHTML=html;
+  res.innerHTML=html;
 }
 
-function gerarLinkCompartilhamento(){
+function gerar(){
   let publico=JSON.parse(JSON.stringify(dados));
+  let codigo=btoa(unescape(encodeURIComponent(JSON.stringify(publico))));
+  let incluirFalcao=shareFalcao.checked ? "sim" : "nao";
+  let url=location.origin+location.pathname+"?share="+codigo+"&falcao="+incluirFalcao;
 
-  let texto=btoa(unescape(encodeURIComponent(JSON.stringify(publico))));
-  let url=window.location.origin + window.location.pathname + "?share=" + texto;
-
-  linkCompartilhar.innerHTML=`
+  link.innerHTML=`
     <b>Link somente leitura:</b><br><br>
     ${url}
     <br><br>
-    <button onclick="copiarLink('${url}')">Copiar link</button>
+    <button onclick="copiar('${url}')">Copiar link</button>
   `;
 }
 
-function copiarLink(url){
+function copiar(url){
   navigator.clipboard.writeText(url);
   alert("Link copiado!");
 }
 
-carregarCompartilhado();
+carregar();
 render();
 </script>
 
