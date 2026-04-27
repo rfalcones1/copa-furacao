@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Copa Furacão</title>
-
 <style>
 body{margin:0;font-family:Arial;background:#080808;color:white}
 header{background:#c8102e;padding:16px;text-align:center;font-size:22px;font-weight:bold}
@@ -60,9 +59,9 @@ th,td{padding:7px;border-bottom:1px solid #333}
 
 <div class="nav">
   <button class="active" onclick="mostrar('jogos',this)">Jogos</button>
-  <button id="btnCad" onclick="mostrar('cadastros',this)">Cadastros</button>
+  <button id="btnCad" style="display:none" onclick="mostrar('cadastros',this)">Cadastros</button>
   <button onclick="mostrar('tabelaTela',this)">Tabela</button>
-  <button id="btnFalcao" onclick="mostrar('falcao',this)">Falcão</button>
+  <button id="btnFalcao" style="display:none" onclick="mostrar('falcao',this)">Falcão</button>
   <button onclick="logout()">Sair</button>
 </div>
 
@@ -208,20 +207,28 @@ function podeEditar(){return perfil==="admin";}
 function podeVerFalcao(){return perfil==="admin" || perfil==="falcao";}
 
 function aplicarPermissoes(){
+  const admin=perfil==="admin";
+  const falcaoPermitido=perfil==="admin" || perfil==="falcao";
+
   document.querySelectorAll(".adminOnly").forEach(el=>{
-    el.style.display=podeEditar() ? "block" : "none";
+    el.style.display=admin ? "block" : "none";
   });
 
-  btnCad.style.display=podeEditar() ? "block" : "none";
-  btnFalcao.style.display=podeVerFalcao() ? "block" : "none";
+  btnCad.style.display=admin ? "block" : "none";
+  btnFalcao.style.display=falcaoPermitido ? "block" : "none";
 
-  if(formFalcao){
-    formFalcao.style.display=podeEditar() ? "block" : "none";
+  if(!admin && cadastros.style.display==="block"){
+    cadastros.style.display="none";
+    jogos.style.display="block";
   }
 
-  if(!podeVerFalcao() && falcao.style.display==="block"){
+  if(!falcaoPermitido && falcao.style.display==="block"){
     falcao.style.display="none";
     jogos.style.display="block";
+  }
+
+  if(formFalcao){
+    formFalcao.style.display=admin ? "block" : "none";
   }
 }
 
@@ -236,7 +243,6 @@ window.login=async()=>{
 window.criarConta=async()=>{
   try{
     const cred=await createUserWithEmailAndPassword(auth,email.value,senha.value);
-
     let novoPerfil=cred.user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? "admin" : "viewer";
 
     await setDoc(doc(db,"usuarios",cred.user.uid),{
@@ -250,9 +256,7 @@ window.criarConta=async()=>{
   }
 };
 
-window.logout=async()=>{
-  await signOut(auth);
-};
+window.logout=async()=>{await signOut(auth);};
 
 onAuthStateChanged(auth,async(user)=>{
   if(user){
@@ -261,12 +265,7 @@ onAuthStateChanged(auth,async(user)=>{
 
     if(!usnap.exists()){
       let novoPerfil=user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? "admin" : "viewer";
-
-      await setDoc(uref,{
-        email:user.email,
-        perfil:novoPerfil
-      });
-
+      await setDoc(uref,{email:user.email,perfil:novoPerfil});
       perfil=novoPerfil;
     }else{
       perfil=usnap.data().perfil || "viewer";
@@ -314,6 +313,11 @@ window.trocarCategoria=(c,el)=>{
 };
 
 window.mostrar=(id,el)=>{
+  if(id==="cadastros" && !podeEditar()){
+    alert("Você não tem acesso aos cadastros.");
+    return;
+  }
+
   if(id==="falcao" && !podeVerFalcao()){
     alert("Você não tem acesso à aba Falcão.");
     return;
@@ -471,7 +475,6 @@ function limparFormulario(){
 
 window.salvarFalcao=async()=>{
   if(!podeEditar())return alert("Sem permissão.");
-
   let i=jogoSel.value;
   if(i==="")return alert("Selecione um jogo.");
 
@@ -549,7 +552,6 @@ function render(){
 
 function montarTabela(){
   let d=dados[categoria];
-
   let tabelaTimes={"Furacão CL":{j:0,pts:0,v:0,e:0,d:0,gp:0,gc:0}};
 
   d.times.forEach(t=>tabelaTimes[t]={j:0,pts:0,v:0,e:0,d:0,gp:0,gc:0});
@@ -569,7 +571,6 @@ function montarTabela(){
   });
 
   let arr=Object.entries(tabelaTimes).map(([time,t])=>({time,...t,sg:t.gp-t.gc}));
-
   arr.sort((a,b)=>b.pts-a.pts||b.sg-a.sg||b.gp-a.gp);
 
   tabela.innerHTML=`<table><tr><th>Time</th><th>J</th><th>Pts</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th></tr>${arr.map(t=>`<tr><td>${t.time}</td><td>${t.j}</td><td>${t.pts}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${t.gp}</td><td>${t.gc}</td><td>${t.sg}</td></tr>`).join("")}</table>`;
