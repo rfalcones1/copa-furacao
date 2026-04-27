@@ -175,7 +175,7 @@ th,td{padding:7px;border-bottom:1px solid #333}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBvBBW0BKOk4UGEXec6Bf5qRhjbpANjqr4",
@@ -190,7 +190,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let categoria="sub11", editIndex=null, perfil="viewer";
+let categoria="sub11";
+let editIndex=null;
+let perfil="viewer";
+
+const ADMIN_EMAIL="ricardo1.falcao@hotmail.com";
 
 let dados={
   sub11:{times:[],jogadores:[],jogos:[]},
@@ -200,25 +204,55 @@ let dados={
 
 const dadosRef=doc(db,"copa","dados");
 
+function podeEditar(){return perfil==="admin";}
+function podeVerFalcao(){return perfil==="admin" || perfil==="falcao";}
+
+function aplicarPermissoes(){
+  document.querySelectorAll(".adminOnly").forEach(el=>{
+    el.style.display=podeEditar() ? "block" : "none";
+  });
+
+  btnCad.style.display=podeEditar() ? "block" : "none";
+  btnFalcao.style.display=podeVerFalcao() ? "block" : "none";
+
+  if(formFalcao){
+    formFalcao.style.display=podeEditar() ? "block" : "none";
+  }
+
+  if(!podeVerFalcao() && falcao.style.display==="block"){
+    falcao.style.display="none";
+    jogos.style.display="block";
+  }
+}
+
 window.login=async()=>{
-  try{await signInWithEmailAndPassword(auth,email.value,senha.value);}
-  catch(e){alert("Erro no login: "+e.message);}
+  try{
+    await signInWithEmailAndPassword(auth,email.value,senha.value);
+  }catch(e){
+    alert("Erro no login: "+e.message);
+  }
 };
 
 window.criarConta=async()=>{
   try{
     const cred=await createUserWithEmailAndPassword(auth,email.value,senha.value);
-    const usuariosSnap=await getDocs(collection(db,"usuarios"));
-    const primeiroUsuario=usuariosSnap.empty;
+
+    let novoPerfil=cred.user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? "admin" : "viewer";
+
     await setDoc(doc(db,"usuarios",cred.user.uid),{
       email:cred.user.email,
-      perfil:primeiroUsuario ? "admin" : "viewer"
+      perfil:novoPerfil
     });
-    alert(primeiroUsuario ? "Conta criada como ADMIN." : "Conta criada como VISUALIZADOR.");
-  }catch(e){alert("Erro ao criar conta: "+e.message);}
+
+    alert(novoPerfil==="admin" ? "Conta criada como ADMIN." : "Conta criada como VISUALIZADOR.");
+  }catch(e){
+    alert("Erro ao criar conta: "+e.message);
+  }
 };
 
-window.logout=async()=>{await signOut(auth);};
+window.logout=async()=>{
+  await signOut(auth);
+};
 
 onAuthStateChanged(auth,async(user)=>{
   if(user){
@@ -226,22 +260,34 @@ onAuthStateChanged(auth,async(user)=>{
     const usnap=await getDoc(uref);
 
     if(!usnap.exists()){
-      await setDoc(uref,{email:user.email,perfil:"viewer"});
-      perfil="viewer";
+      let novoPerfil=user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? "admin" : "viewer";
+
+      await setDoc(uref,{
+        email:user.email,
+        perfil:novoPerfil
+      });
+
+      perfil=novoPerfil;
     }else{
-      perfil=usnap.data().perfil||"viewer";
+      perfil=usnap.data().perfil || "viewer";
     }
 
     loginTela.style.display="none";
     appTela.style.display="block";
     status.innerHTML=`Logado: ${user.email} | Perfil: ${perfil}`;
+
     aplicarPermissoes();
 
     onSnapshot(dadosRef,async(snap)=>{
-      if(snap.exists()) dados=snap.data();
-      else await setDoc(dadosRef,dados);
+      if(snap.exists()){
+        dados=snap.data();
+      }else{
+        await setDoc(dadosRef,dados);
+      }
       render();
+      aplicarPermissoes();
     });
+
   }else{
     loginTela.style.display="block";
     appTela.style.display="none";
@@ -249,55 +295,71 @@ onAuthStateChanged(auth,async(user)=>{
   }
 });
 
-function podeEditar(){return perfil==="admin";}
-function podeVerFalcao(){return perfil==="admin"||perfil==="falcao";}
-
-function aplicarPermissoes(){
-  document.querySelectorAll(".adminOnly").forEach(el=>el.style.display=podeEditar()?"block":"none");
-  btnCad.style.display=podeEditar()?"block":"none";
-  btnFalcao.style.display=podeVerFalcao()?"block":"none";
-}
-
 async function salvarNuvem(){
-  if(!podeEditar())return alert("Você não tem permissão para editar.");
+  if(!podeEditar()){
+    alert("Você não tem permissão para editar.");
+    return;
+  }
   await setDoc(dadosRef,dados);
 }
 
 window.trocarCategoria=(c,el)=>{
-  categoria=c;editIndex=null;
+  categoria=c;
+  editIndex=null;
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   el.classList.add("active");
-  cancelarEdicao();render();
+  cancelarEdicao();
+  render();
+  aplicarPermissoes();
 };
 
 window.mostrar=(id,el)=>{
-  jogos.style.display="none";cadastros.style.display="none";tabelaTela.style.display="none";falcao.style.display="none";
+  if(id==="falcao" && !podeVerFalcao()){
+    alert("Você não tem acesso à aba Falcão.");
+    return;
+  }
+
+  jogos.style.display="none";
+  cadastros.style.display="none";
+  tabelaTela.style.display="none";
+  falcao.style.display="none";
+
   document.getElementById(id).style.display="block";
+
   document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
   el.classList.add("active");
+
   render();
+  aplicarPermissoes();
 };
 
 window.addTime=async()=>{
   if(!podeEditar())return alert("Sem permissão.");
-  let n=novoTime.value.trim();if(!n)return;
-  dados[categoria].times.push(n);novoTime.value="";
+  let n=novoTime.value.trim();
+  if(!n)return;
+  dados[categoria].times.push(n);
+  novoTime.value="";
   await salvarNuvem();
 };
 
 window.addJogador=async()=>{
   if(!podeEditar())return alert("Sem permissão.");
-  let n=novoJogador.value.trim();if(!n)return;
-  dados[categoria].jogadores.push(n);novoJogador.value="";
+  let n=novoJogador.value.trim();
+  if(!n)return;
+  dados[categoria].jogadores.push(n);
+  novoJogador.value="";
   await salvarNuvem();
 };
 
 function opcoesJogadores(valor=""){
-  return '<option value="">Selecione</option>'+dados[categoria].jogadores.map(j=>`<option value="${j}" ${j===valor?"selected":""}>${j}</option>`).join("");
+  return '<option value="">Selecione</option>'+
+  dados[categoria].jogadores.map(j=>`<option value="${j}" ${j===valor?"selected":""}>${j}</option>`).join("");
 }
 
 function opcoesGols(valor=0){
-  let h="";for(let i=0;i<=20;i++)h+=`<option value="${i}" ${i==valor?"selected":""}>${i}</option>`;return h;
+  let h="";
+  for(let i=0;i<=20;i++)h+=`<option value="${i}" ${i==valor?"selected":""}>${i}</option>`;
+  return h;
 }
 
 window.addLinhaGol=(jogador="",qtd=1)=>{
@@ -322,16 +384,35 @@ window.salvarJogo=async()=>{
   if(!timeB.value)return alert("Selecione o adversário.");
 
   let jogo={
-    timeB:timeB.value,golsA:Number(golsA.value||0),golsB:Number(golsB.value||0),local:localJogo.value,craque:craque.value,
-    campo:{gol:gol.value,zagueiro:zagueiro.value,volante:volante.value,alaEsq:alaEsq.value,alaDir:alaDir.value,meia:meia.value,atacante:atacante.value},
-    golsJogadores:obterGolsJogadores(),tempoFalcao:"Jogo inteiro",gF:0,gO:0
+    timeB:timeB.value,
+    golsA:Number(golsA.value||0),
+    golsB:Number(golsB.value||0),
+    local:localJogo.value,
+    craque:craque.value,
+    campo:{
+      gol:gol.value,
+      zagueiro:zagueiro.value,
+      volante:volante.value,
+      alaEsq:alaEsq.value,
+      alaDir:alaDir.value,
+      meia:meia.value,
+      atacante:atacante.value
+    },
+    golsJogadores:obterGolsJogadores(),
+    tempoFalcao:"Jogo inteiro",
+    gF:0,
+    gO:0
   };
 
   if(editIndex!==null){
     let antigo=dados[categoria].jogos[editIndex];
-    jogo.tempoFalcao=antigo.tempoFalcao||"Jogo inteiro";jogo.gF=antigo.gF||0;jogo.gO=antigo.gO||0;
+    jogo.tempoFalcao=antigo.tempoFalcao||"Jogo inteiro";
+    jogo.gF=antigo.gF||0;
+    jogo.gO=antigo.gO||0;
     dados[categoria].jogos[editIndex]=jogo;
-  }else dados[categoria].jogos.push(jogo);
+  }else{
+    dados[categoria].jogos.push(jogo);
+  }
 
   limparFormulario();
   await salvarNuvem();
@@ -339,55 +420,107 @@ window.salvarJogo=async()=>{
 
 window.editarJogo=(i)=>{
   if(!podeEditar())return;
-  let g=dados[categoria].jogos[i];editIndex=i;
-  tituloForm.innerText="Editar jogo";btnCancelarEdicao.style.display="block";
-  timeB.value=g.timeB;golsA.value=g.golsA;golsB.value=g.golsB;localJogo.value=g.local||"Casa";craque.value=g.craque||"";
-  gol.value=g.campo?.gol||"";zagueiro.value=g.campo?.zagueiro||"";volante.value=g.campo?.volante||"";alaEsq.value=g.campo?.alaEsq||"";alaDir.value=g.campo?.alaDir||"";meia.value=g.campo?.meia||"";atacante.value=g.campo?.atacante||"";
+  let g=dados[categoria].jogos[i];
+  editIndex=i;
+
+  tituloForm.innerText="Editar jogo";
+  btnCancelarEdicao.style.display="block";
+
+  timeB.value=g.timeB;
+  golsA.value=g.golsA;
+  golsB.value=g.golsB;
+  localJogo.value=g.local||"Casa";
+  craque.value=g.craque||"";
+
+  gol.value=g.campo?.gol||"";
+  zagueiro.value=g.campo?.zagueiro||"";
+  volante.value=g.campo?.volante||"";
+  alaEsq.value=g.campo?.alaEsq||"";
+  alaDir.value=g.campo?.alaDir||"";
+  meia.value=g.campo?.meia||"";
+  atacante.value=g.campo?.atacante||"";
+
   golsJogadores.innerHTML="";
   (g.golsJogadores||[]).forEach(item=>addLinhaGol(item.jogador,item.gols));
+
   window.scrollTo({top:0,behavior:"smooth"});
 };
 
 window.cancelarEdicao=()=>{
   editIndex=null;
-  if(document.getElementById("tituloForm"))tituloForm.innerText="Novo jogo";
-  if(document.getElementById("btnCancelarEdicao"))btnCancelarEdicao.style.display="none";
+  if(tituloForm)tituloForm.innerText="Novo jogo";
+  if(btnCancelarEdicao)btnCancelarEdicao.style.display="none";
   limparFormulario();
 };
 
 function limparFormulario(){
-  golsA.value="";golsB.value="";golsJogadores.innerHTML="";
-  if(timeB.options.length)timeB.selectedIndex=0;if(craque.options.length)craque.selectedIndex=0;
-  localJogo.value="Casa";gol.value="";zagueiro.value="";volante.value="";alaEsq.value="";alaDir.value="";meia.value="";atacante.value="";
+  golsA.value="";
+  golsB.value="";
+  golsJogadores.innerHTML="";
+  if(timeB.options.length)timeB.selectedIndex=0;
+  if(craque.options.length)craque.selectedIndex=0;
+  localJogo.value="Casa";
+  gol.value="";
+  zagueiro.value="";
+  volante.value="";
+  alaEsq.value="";
+  alaDir.value="";
+  meia.value="";
+  atacante.value="";
 }
 
 window.salvarFalcao=async()=>{
   if(!podeEditar())return alert("Sem permissão.");
-  let i=jogoSel.value;if(i==="")return alert("Selecione um jogo.");
+
+  let i=jogoSel.value;
+  if(i==="")return alert("Selecione um jogo.");
+
   dados[categoria].jogos[i].tempoFalcao=tempoFalcao.value;
   dados[categoria].jogos[i].gF=Number(gF.value);
   dados[categoria].jogos[i].gO=Number(gO.value);
-  await salvarNuvem();alert("Desempenho salvo!");
+
+  await salvarNuvem();
+  alert("Desempenho salvo!");
 };
 
 window.excluirJogo=async(i)=>{
   if(!podeEditar())return;
-  if(confirm("Excluir este jogo?")){dados[categoria].jogos.splice(i,1);await salvarNuvem();}
+  if(confirm("Excluir este jogo?")){
+    dados[categoria].jogos.splice(i,1);
+    await salvarNuvem();
+  }
 };
 
-function classeResultado(g){if(g.golsA>g.golsB)return"win";if(g.golsA<g.golsB)return"loss";return"draw";}
-function textoGolsJogadores(g){return(!g.golsJogadores||!g.golsJogadores.length)?"-":g.golsJogadores.map(i=>`${i.jogador}: ${i.gols}`).join("<br>");}
+function classeResultado(g){
+  if(g.golsA>g.golsB)return"win";
+  if(g.golsA<g.golsB)return"loss";
+  return"draw";
+}
+
+function textoGolsJogadores(g){
+  return(!g.golsJogadores||!g.golsJogadores.length)?"-":g.golsJogadores.map(i=>`${i.jogador}: ${i.gols}`).join("<br>");
+}
 
 function render(){
   let d=dados[categoria];
+
   listaTimes.innerHTML=d.times.map(t=>`<p>${t}</p>`).join("");
   listaJogadores.innerHTML=d.jogadores.map(j=>`<p>${j}</p>`).join("");
 
   if(podeEditar()){
     timeB.innerHTML='<option value="">Selecione</option>'+d.times.map(t=>`<option value="${t}">${t}</option>`).join("");
     craque.innerHTML=opcoesJogadores();
-    gol.innerHTML=opcoesJogadores();zagueiro.innerHTML=opcoesJogadores();volante.innerHTML=opcoesJogadores();alaEsq.innerHTML=opcoesJogadores();alaDir.innerHTML=opcoesJogadores();meia.innerHTML=opcoesJogadores();atacante.innerHTML=opcoesJogadores();
-    gF.innerHTML=opcoesGols();gO.innerHTML=opcoesGols();
+
+    gol.innerHTML=opcoesJogadores();
+    zagueiro.innerHTML=opcoesJogadores();
+    volante.innerHTML=opcoesJogadores();
+    alaEsq.innerHTML=opcoesJogadores();
+    alaDir.innerHTML=opcoesJogadores();
+    meia.innerHTML=opcoesJogadores();
+    atacante.innerHTML=opcoesJogadores();
+
+    gF.innerHTML=opcoesGols();
+    gO.innerHTML=opcoesGols();
   }
 
   jogoSel.innerHTML='<option value="">Selecione</option>'+d.jogos.map((g,i)=>`<option value="${i}">Furacão CL ${g.golsA} x ${g.golsB} ${g.timeB}</option>`).join("");
@@ -395,33 +528,56 @@ function render(){
   games.innerHTML=d.jogos.map((g,i)=>`
   <div class="game ${classeResultado(g)}">
   <b>Furacão CL ${g.golsA} x ${g.golsB} ${g.timeB}</b><br>
-  Local: ${g.local||"Casa"}<br>Craque: ${g.craque||"-"}<br><br>
+  Local: ${g.local||"Casa"}<br>
+  Craque: ${g.craque||"-"}<br><br>
   <b>Escalação Furacão CL</b><br>
-  GOL: ${g.campo?.gol||"-"}<br>ZAGUEIRO: ${g.campo?.zagueiro||"-"}<br>VOLANTE: ${g.campo?.volante||"-"}<br>ALA ESQ: ${g.campo?.alaEsq||"-"}<br>ALA DIR: ${g.campo?.alaDir||"-"}<br>MEIA: ${g.campo?.meia||"-"}<br>ATACANTE: ${g.campo?.atacante||"-"}<br><br>
+  GOL: ${g.campo?.gol||"-"}<br>
+  ZAGUEIRO: ${g.campo?.zagueiro||"-"}<br>
+  VOLANTE: ${g.campo?.volante||"-"}<br>
+  ALA ESQ: ${g.campo?.alaEsq||"-"}<br>
+  ALA DIR: ${g.campo?.alaDir||"-"}<br>
+  MEIA: ${g.campo?.meia||"-"}<br>
+  ATACANTE: ${g.campo?.atacante||"-"}<br><br>
   <b>Gols por jogador</b><br>${textoGolsJogadores(g)}<br>
   ${podeEditar()?`<button class="small" onclick="editarJogo(${i})">Editar jogo</button><button class="small" onclick="excluirJogo(${i})">Excluir jogo</button>`:""}
   </div>`).join("")||"Nenhum jogo cadastrado.";
 
-  montarTabela();montarResumoFalcao();
+  montarTabela();
+  montarResumoFalcao();
+  aplicarPermissoes();
 }
 
 function montarTabela(){
   let d=dados[categoria];
+
   let tabelaTimes={"Furacão CL":{j:0,pts:0,v:0,e:0,d:0,gp:0,gc:0}};
+
   d.times.forEach(t=>tabelaTimes[t]={j:0,pts:0,v:0,e:0,d:0,gp:0,gc:0});
+
   d.jogos.forEach(g=>{
     if(!tabelaTimes[g.timeB])tabelaTimes[g.timeB]={j:0,pts:0,v:0,e:0,d:0,gp:0,gc:0};
+
     let A=tabelaTimes["Furacão CL"],B=tabelaTimes[g.timeB];
-    A.j++;B.j++;A.gp+=g.golsA;A.gc+=g.golsB;B.gp+=g.golsB;B.gc+=g.golsA;
-    if(g.golsA>g.golsB){A.pts+=3;A.v++;B.d++;}else if(g.golsA<g.golsB){B.pts+=3;B.v++;A.d++;}else{A.pts++;B.pts++;A.e++;B.e++;}
+
+    A.j++;B.j++;
+    A.gp+=g.golsA;A.gc+=g.golsB;
+    B.gp+=g.golsB;B.gc+=g.golsA;
+
+    if(g.golsA>g.golsB){A.pts+=3;A.v++;B.d++;}
+    else if(g.golsA<g.golsB){B.pts+=3;B.v++;A.d++;}
+    else{A.pts++;B.pts++;A.e++;B.e++;}
   });
+
   let arr=Object.entries(tabelaTimes).map(([time,t])=>({time,...t,sg:t.gp-t.gc}));
+
   arr.sort((a,b)=>b.pts-a.pts||b.sg-a.sg||b.gp-a.gp);
+
   tabela.innerHTML=`<table><tr><th>Time</th><th>J</th><th>Pts</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th></tr>${arr.map(t=>`<tr><td>${t.time}</td><td>${t.j}</td><td>${t.pts}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${t.gp}</td><td>${t.gc}</td><td>${t.sg}</td></tr>`).join("")}</table>`;
 }
 
 function montarResumoFalcao(){
   let html="";
+
   ["sub11","sub12","sub13"].forEach(cat=>{
     let jogos=dados[cat].jogos;
     let inteiro=jogos.filter(j=>j.tempoFalcao==="Jogo inteiro").length;
@@ -429,8 +585,10 @@ function montarResumoFalcao(){
     let segundo=jogos.filter(j=>j.tempoFalcao==="2º Tempo").length;
     let golsF=jogos.reduce((s,j)=>s+(j.gF||0),0);
     let golsO=jogos.reduce((s,j)=>s+(j.gO||0),0);
+
     html+=`<div class="game"><h3>${cat.toUpperCase()}</h3>Jogo inteiro: ${inteiro}<br>1º Tempo: ${primeiro}<br>2º Tempo: ${segundo}<br>Gols sofridos Falcão: ${golsF}<br>Gols sofridos outro goleiro: ${golsO}</div>`;
   });
+
   res.innerHTML=html;
 }
 </script>
