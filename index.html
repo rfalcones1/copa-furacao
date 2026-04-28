@@ -19,13 +19,12 @@ button{width:100%;padding:14px;margin-top:14px;background:#c8102e;color:white;bo
 .field{background:#126b35;border:3px solid white;border-radius:18px;padding:14px;margin-top:10px}
 .pos{background:rgba(255,255,255,.15);border:1px solid white;border-radius:12px;padding:10px;margin:8px 0;text-align:center}
 .pos-title{font-weight:bold;margin-bottom:6px}
-.game{margin-top:10px;padding:12px;border-radius:9px}
+.game,.ranking{margin-top:10px;padding:12px;border-radius:9px;background:#222}
 .win{background:#167a37}.draw{background:#a98208}.loss{background:#84241c}
 table{width:100%;border-collapse:collapse;text-align:center;font-size:13px}
 th,td{padding:7px;border-bottom:1px solid #333}
 .goal-row{display:flex;gap:8px;align-items:center;margin-top:8px}
 .goal-row select{flex:2}.goal-row input{flex:1}.goal-row button{flex:1;margin-top:5px;padding:10px}
-.login{max-width:420px;margin:20px auto}
 .status{background:#222;padding:10px;text-align:center;font-size:13px}
 </style>
 </head>
@@ -33,9 +32,9 @@ th,td{padding:7px;border-bottom:1px solid #333}
 <body>
 
 <header>Copa Furacão</header>
-<div id="status" class="status">Faça login para acessar</div>
+<div id="status" class="status">Modo público: somente visualização</div>
 
-<div id="loginTela" class="container login">
+<div id="loginTela" class="container" style="display:none">
   <div class="section">
     <h3>Login</h3>
     <label>E-mail</label>
@@ -44,10 +43,11 @@ th,td{padding:7px;border-bottom:1px solid #333}
     <input id="senha" type="password" placeholder="mínimo 6 caracteres">
     <button onclick="login()">Entrar</button>
     <button class="small" onclick="criarConta()">Criar conta</button>
+    <button class="small" onclick="mostrar('jogos',btnJogos)">Voltar ao modo público</button>
   </div>
 </div>
 
-<div id="appTela" style="display:none">
+<div id="appTela">
 
 <div class="tabs">
   <div class="tab active" onclick="trocarCategoria('sub11',this)">Sub11</div>
@@ -58,11 +58,13 @@ th,td{padding:7px;border-bottom:1px solid #333}
 <div class="container">
 
 <div class="nav">
-  <button class="active" onclick="mostrar('jogos',this)">Jogos</button>
+  <button id="btnJogos" class="active" onclick="mostrar('jogos',this)">Jogos</button>
   <button id="btnCad" style="display:none" onclick="mostrar('cadastros',this)">Cadastros</button>
   <button onclick="mostrar('tabelaTela',this)">Tabela</button>
-  <button id="btnFalcao" style="display:none" onclick="mostrar('falcao',this)">Falcão</button>
-  <button onclick="logout()">Sair</button>
+  <button onclick="mostrar('artilhariaTela',this)">Artilharia</button>
+  <button id="btnFalcao" style="display:none" onclick="mostrar('falcao',this)">Goleiro</button>
+  <button id="btnLogin" onclick="abrirLogin()">Login</button>
+  <button id="btnSair" style="display:none" onclick="logout()">Sair</button>
 </div>
 
 <div id="cadastros" style="display:none">
@@ -107,7 +109,6 @@ th,td{padding:7px;border-bottom:1px solid #333}
     <select id="craque"></select>
 
     <h3>Escalação Furacão CL</h3>
-
     <div class="field">
       <div class="pos"><div class="pos-title">GOL</div><select id="gol"></select></div>
       <div class="pos"><div class="pos-title">ZAGUEIRO</div><select id="zagueiro"></select></div>
@@ -139,9 +140,16 @@ th,td{padding:7px;border-bottom:1px solid #333}
   </div>
 </div>
 
+<div id="artilhariaTela" style="display:none">
+  <div class="section">
+    <h3>Artilharia por categoria</h3>
+    <div id="artilharia"></div>
+  </div>
+</div>
+
 <div id="falcao" style="display:none">
   <div id="formFalcao" class="section adminOnly">
-    <h3>Registro Falcão</h3>
+    <h3>Registro do Goleiro</h3>
 
     <label>Selecionar jogo</label>
     <select id="jogoSel"></select>
@@ -163,7 +171,7 @@ th,td{padding:7px;border-bottom:1px solid #333}
   </div>
 
   <div class="section">
-    <h3>Resumo Falcão por categoria</h3>
+    <h3>Ranking automático de goleiro</h3>
     <div id="res"></div>
   </div>
 </div>
@@ -191,7 +199,7 @@ const db = getFirestore(app);
 
 let categoria="sub11";
 let editIndex=null;
-let perfil="viewer";
+let perfil="publico";
 
 const ADMIN_EMAIL="ricardo1.falcao@hotmail.com";
 
@@ -207,8 +215,8 @@ function podeEditar(){return perfil==="admin";}
 function podeVerFalcao(){return perfil==="admin" || perfil==="falcao";}
 
 function aplicarPermissoes(){
-  const admin=perfil==="admin";
-  const falcaoPermitido=perfil==="admin" || perfil==="falcao";
+  const admin=podeEditar();
+  const falcaoPermitido=podeVerFalcao();
 
   document.querySelectorAll(".adminOnly").forEach(el=>{
     el.style.display=admin ? "block" : "none";
@@ -216,6 +224,8 @@ function aplicarPermissoes(){
 
   btnCad.style.display=admin ? "block" : "none";
   btnFalcao.style.display=falcaoPermitido ? "block" : "none";
+  btnLogin.style.display=perfil==="publico" ? "block" : "none";
+  btnSair.style.display=perfil==="publico" ? "none" : "block";
 
   if(!admin && cadastros.style.display==="block"){
     cadastros.style.display="none";
@@ -231,6 +241,11 @@ function aplicarPermissoes(){
     formFalcao.style.display=admin ? "block" : "none";
   }
 }
+
+window.abrirLogin=()=>{
+  appTela.style.display="none";
+  loginTela.style.display="block";
+};
 
 window.login=async()=>{
   try{
@@ -256,7 +271,7 @@ window.criarConta=async()=>{
   }
 };
 
-window.logout=async()=>{await signOut(auth);};
+window.logout=async()=>{ await signOut(auth); };
 
 onAuthStateChanged(auth,async(user)=>{
   if(user){
@@ -274,24 +289,24 @@ onAuthStateChanged(auth,async(user)=>{
     loginTela.style.display="none";
     appTela.style.display="block";
     status.innerHTML=`Logado: ${user.email} | Perfil: ${perfil}`;
-
-    aplicarPermissoes();
-
-    onSnapshot(dadosRef,async(snap)=>{
-      if(snap.exists()){
-        dados=snap.data();
-      }else{
-        await setDoc(dadosRef,dados);
-      }
-      render();
-      aplicarPermissoes();
-    });
-
   }else{
-    loginTela.style.display="block";
-    appTela.style.display="none";
-    status.innerHTML="Faça login para acessar";
+    perfil="publico";
+    loginTela.style.display="none";
+    appTela.style.display="block";
+    status.innerHTML="Modo público: somente visualização";
   }
+
+  aplicarPermissoes();
+});
+
+onSnapshot(dadosRef,async(snap)=>{
+  if(snap.exists()){
+    dados=snap.data();
+  }else{
+    await setDoc(dadosRef,dados);
+  }
+  render();
+  aplicarPermissoes();
 });
 
 async function salvarNuvem(){
@@ -319,13 +334,17 @@ window.mostrar=(id,el)=>{
   }
 
   if(id==="falcao" && !podeVerFalcao()){
-    alert("Você não tem acesso à aba Falcão.");
+    alert("Você não tem acesso à aba Goleiro.");
     return;
   }
+
+  loginTela.style.display="none";
+  appTela.style.display="block";
 
   jogos.style.display="none";
   cadastros.style.display="none";
   tabelaTela.style.display="none";
+  artilhariaTela.style.display="none";
   falcao.style.display="none";
 
   document.getElementById(id).style.display="block";
@@ -507,8 +526,10 @@ function textoGolsJogadores(g){
 function render(){
   let d=dados[categoria];
 
-  listaTimes.innerHTML=d.times.map(t=>`<p>${t}</p>`).join("");
-  listaJogadores.innerHTML=d.jogadores.map(j=>`<p>${j}</p>`).join("");
+  if(document.getElementById("listaTimes")){
+    listaTimes.innerHTML=d.times.map(t=>`<p>${t}</p>`).join("");
+    listaJogadores.innerHTML=d.jogadores.map(j=>`<p>${j}</p>`).join("");
+  }
 
   if(podeEditar()){
     timeB.innerHTML='<option value="">Selecione</option>'+d.times.map(t=>`<option value="${t}">${t}</option>`).join("");
@@ -547,6 +568,7 @@ function render(){
 
   montarTabela();
   montarResumoFalcao();
+  montarArtilharia();
   aplicarPermissoes();
 }
 
@@ -581,16 +603,48 @@ function montarResumoFalcao(){
 
   ["sub11","sub12","sub13"].forEach(cat=>{
     let jogos=dados[cat].jogos;
+    let jogosComRegistro=jogos.filter(j=>j.tempoFalcao || (j.gF||0)>0 || (j.gO||0)>0);
+    let jogosFalcao=jogosComRegistro.length;
     let inteiro=jogos.filter(j=>j.tempoFalcao==="Jogo inteiro").length;
     let primeiro=jogos.filter(j=>j.tempoFalcao==="1º Tempo").length;
     let segundo=jogos.filter(j=>j.tempoFalcao==="2º Tempo").length;
     let golsF=jogos.reduce((s,j)=>s+(j.gF||0),0);
     let golsO=jogos.reduce((s,j)=>s+(j.gO||0),0);
+    let clean=jogosComRegistro.filter(j=>(j.gF||0)===0).length;
+    let media=jogosFalcao ? (golsF/jogosFalcao).toFixed(2) : "0.00";
+    let pct=jogosFalcao ? ((clean/jogosFalcao)*100).toFixed(0) : "0";
 
-    html+=`<div class="game"><h3>${cat.toUpperCase()}</h3>Jogo inteiro: ${inteiro}<br>1º Tempo: ${primeiro}<br>2º Tempo: ${segundo}<br>Gols sofridos Falcão: ${golsF}<br>Gols sofridos outro goleiro: ${golsO}</div>`;
+    html+=`<div class="ranking">
+    <h3>${cat.toUpperCase()}</h3>
+    Jogos registrados: ${jogosFalcao}<br>
+    Jogo inteiro: ${inteiro}<br>
+    1º Tempo: ${primeiro}<br>
+    2º Tempo: ${segundo}<br>
+    Gols sofridos Falcão: ${golsF}<br>
+    Gols sofridos outro goleiro: ${golsO}<br>
+    Média gols sofridos: ${media}<br>
+    Jogos sem sofrer gol: ${clean}<br>
+    Aproveitamento sem sofrer gol: ${pct}%
+    </div>`;
   });
 
   res.innerHTML=html;
+}
+
+function montarArtilharia(){
+  let gols={};
+
+  dados[categoria].jogos.forEach(j=>{
+    (j.golsJogadores||[]).forEach(item=>{
+      gols[item.jogador]=(gols[item.jogador]||0)+Number(item.gols||0);
+    });
+  });
+
+  let ranking=Object.entries(gols).sort((a,b)=>b[1]-a[1]);
+
+  artilharia.innerHTML=ranking.length
+    ? ranking.map((r,i)=>`<div class="ranking"><b>${i+1}º ${r[0]}</b><br>${r[1]} gol(s)</div>`).join("")
+    : "Nenhum gol por jogador cadastrado ainda.";
 }
 </script>
 
