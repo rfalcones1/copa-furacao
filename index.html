@@ -260,7 +260,7 @@ function aplicarPermissoes(){
   btnOutros.style.display=admin ? "block" : "none";
   btnFalcao.style.display=admin ? "block" : "none";
   btnLogin.style.display=perfil==="publico" ? "block" : "none";
-  btnSair.style.display=perfil==="publico" ? "none" : "block";
+  btnSair.style.display=admin ? "block" : "none";
 
   if(!admin && (cadastros.style.display==="block" || outrosTela.style.display==="block" || falcao.style.display==="block")){
     cadastros.style.display="none";
@@ -282,6 +282,8 @@ window.abrirLogin=()=>{
 window.login=async()=>{
   try{
     await signInWithEmailAndPassword(auth,email.value,senha.value);
+    render();
+    aplicarPermissoes();
   }catch(e){
     alert("Erro no login: "+e.message);
   }
@@ -303,6 +305,8 @@ onAuthStateChanged(auth,async(user)=>{
 
     if(user.email.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){
       perfil="viewer";
+    }else{
+      perfil="admin";
     }
 
     loginTela.style.display="none";
@@ -315,6 +319,7 @@ onAuthStateChanged(auth,async(user)=>{
     status.innerHTML="Modo público: somente visualização";
   }
 
+  render();
   aplicarPermissoes();
 });
 
