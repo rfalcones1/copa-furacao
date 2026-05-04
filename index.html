@@ -36,13 +36,12 @@ th,td{padding:7px;border-bottom:1px solid #333}
 
 <div id="loginTela" class="container" style="display:none">
   <div class="section">
-    <h3>Login</h3>
+    <h3>Login do administrador</h3>
     <label>E-mail</label>
     <input id="email" type="email" placeholder="seuemail@email.com">
     <label>Senha</label>
-    <input id="senha" type="password" placeholder="mínimo 6 caracteres">
+    <input id="senha" type="password" placeholder="senha">
     <button onclick="login()">Entrar</button>
-    <button class="small" onclick="criarConta()">Criar conta</button>
     <button class="small" onclick="mostrar('jogos',btnJogos)">Voltar ao modo público</button>
   </div>
 </div>
@@ -207,7 +206,7 @@ th,td{padding:7px;border-bottom:1px solid #333}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -248,11 +247,10 @@ function corrigirEstrutura(){
 }
 
 function podeEditar(){return perfil==="admin";}
-function podeVerFalcao(){return perfil==="admin" || perfil==="falcao";}
+function podeVerFalcao(){return perfil==="admin";}
 
 function aplicarPermissoes(){
   const admin=podeEditar();
-  const falcaoPermitido=podeVerFalcao();
 
   document.querySelectorAll(".adminOnly").forEach(el=>{
     el.style.display=admin ? "block" : "none";
@@ -260,17 +258,13 @@ function aplicarPermissoes(){
 
   btnCad.style.display=admin ? "block" : "none";
   btnOutros.style.display=admin ? "block" : "none";
-  btnFalcao.style.display=falcaoPermitido ? "block" : "none";
+  btnFalcao.style.display=admin ? "block" : "none";
   btnLogin.style.display=perfil==="publico" ? "block" : "none";
   btnSair.style.display=perfil==="publico" ? "none" : "block";
 
-  if(!admin && (cadastros.style.display==="block" || outrosTela.style.display==="block")){
+  if(!admin && (cadastros.style.display==="block" || outrosTela.style.display==="block" || falcao.style.display==="block")){
     cadastros.style.display="none";
     outrosTela.style.display="none";
-    jogos.style.display="block";
-  }
-
-  if(!falcaoPermitido && falcao.style.display==="block"){
     falcao.style.display="none";
     jogos.style.display="block";
   }
@@ -293,22 +287,6 @@ window.login=async()=>{
   }
 };
 
-window.criarConta=async()=>{
-  try{
-    const cred=await createUserWithEmailAndPassword(auth,email.value,senha.value);
-    let novoPerfil=cred.user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? "admin" : "viewer";
-
-    await setDoc(doc(db,"usuarios",cred.user.uid),{
-      email:cred.user.email,
-      perfil:novoPerfil
-    });
-
-    alert(novoPerfil==="admin" ? "Conta criada como ADMIN." : "Conta criada como VISUALIZADOR.");
-  }catch(e){
-    alert("Erro ao criar conta: "+e.message);
-  }
-};
-
 window.logout=async()=>{ await signOut(auth); };
 
 onAuthStateChanged(auth,async(user)=>{
@@ -317,11 +295,14 @@ onAuthStateChanged(auth,async(user)=>{
     const usnap=await getDoc(uref);
 
     if(!usnap.exists()){
-      let novoPerfil=user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? "admin" : "viewer";
-      await setDoc(uref,{email:user.email,perfil:novoPerfil});
-      perfil=novoPerfil;
+      perfil=user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase() ? "admin" : "viewer";
+      await setDoc(uref,{email:user.email,perfil});
     }else{
       perfil=usnap.data().perfil || "viewer";
+    }
+
+    if(user.email.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){
+      perfil="viewer";
     }
 
     loginTela.style.display="none";
@@ -369,18 +350,8 @@ window.trocarCategoria=(c,el)=>{
 };
 
 window.mostrar=(id,el)=>{
-  if(id==="cadastros" && !podeEditar()){
-    alert("Você não tem acesso aos cadastros.");
-    return;
-  }
-
-  if(id==="outrosTela" && !podeEditar()){
-    alert("Você não tem acesso aos outros jogos.");
-    return;
-  }
-
-  if(id==="falcao" && !podeVerFalcao()){
-    alert("Você não tem acesso à aba Goleiro.");
+  if((id==="cadastros" || id==="outrosTela" || id==="falcao") && !podeEditar()){
+    alert("Acesso restrito ao administrador.");
     return;
   }
 
