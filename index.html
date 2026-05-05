@@ -7,9 +7,9 @@
 <style>
 body{margin:0;font-family:Arial;background:#080808;color:white}
 header{background:#c8102e;padding:16px;text-align:center;font-size:24px;font-weight:bold}
-.status{background:#222;padding:10px;text-align:center}
+.status{background:#222;padding:10px;text-align:center;font-size:13px}
 .tabs,.nav{display:flex;background:#111;overflow-x:auto}
-.tab,.nav button{min-width:110px;flex:1;padding:12px;font-weight:bold;border:none;color:white;background:#222;font-size:14px}
+.tab,.nav button{min-width:105px;flex:1;padding:12px;font-weight:bold;border:none;color:white;background:#222;font-size:14px}
 .tab.active,.nav button.active{background:#c8102e}
 .container{padding:14px}
 .section{background:#151515;margin-bottom:16px;padding:14px;border-radius:12px}
@@ -35,11 +35,11 @@ th,td{padding:7px;border-bottom:1px solid #333}
   <div class="section">
     <h3>Login do administrador</h3>
     <label>E-mail</label>
-    <input id="email" type="email">
+    <input id="email" type="email" placeholder="E-mail do administrador">
     <label>Senha</label>
-    <input id="senha" type="password">
+    <input id="senha" type="password" placeholder="Senha">
     <button onclick="login()">Entrar</button>
-    <button class="small" onclick="mostrar('jogos',btnJogos)">Voltar</button>
+    <button class="small" onclick="voltarPublico()">Voltar ao modo público</button>
   </div>
 </div>
 
@@ -207,7 +207,7 @@ function corrigirEstrutura(){
 function podeEditar(){return perfil==="admin";}
 
 function aplicarPermissoes(){
-  const admin=podeEditar();
+  const admin=perfil==="admin";
 
   document.querySelectorAll(".adminOnly").forEach(el=>{
     el.style.display=admin?"block":"none";
@@ -215,7 +215,7 @@ function aplicarPermissoes(){
 
   btnCad.style.display=admin?"block":"none";
   btnFalcao.style.display=admin?"block":"none";
-  btnLogin.style.display=perfil==="publico"?"block":"none";
+  btnLogin.style.display=admin?"none":"block";
   btnSair.style.display=admin?"block":"none";
 
   if(!admin && (cadastros.style.display==="block" || falcao.style.display==="block")){
@@ -226,20 +226,60 @@ function aplicarPermissoes(){
 }
 
 window.abrirLogin=()=>{
-  appTela.style.display="none";
   loginTela.style.display="block";
+  appTela.style.display="none";
+  status.innerHTML="Login do administrador";
+};
+
+window.voltarPublico=()=>{
+  perfil="publico";
+  loginTela.style.display="none";
+  appTela.style.display="block";
+  status.innerHTML="Modo público: somente visualização";
+  mostrar("jogos",btnJogos);
+  render();
+  aplicarPermissoes();
 };
 
 window.login=async()=>{
   try{
-    await signInWithEmailAndPassword(auth,email.value,senha.value);
+    const userCred=await signInWithEmailAndPassword(auth,email.value.trim(),senha.value);
+
+    if(userCred.user.email.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){
+      alert("Este login não é de administrador.");
+      await signOut(auth);
+      return;
+    }
+
+    perfil="admin";
+    loginTela.style.display="none";
+    appTela.style.display="block";
+    status.innerHTML=`Logado: ${userCred.user.email} | ADMIN`;
+
+    render();
+    aplicarPermissoes();
+
   }catch(e){
     alert("Erro no login: "+e.message);
   }
 };
 
 window.logout=async()=>{
-  await signOut(auth);
+  try{
+    await signOut(auth);
+
+    perfil="publico";
+    loginTela.style.display="none";
+    appTela.style.display="block";
+    status.innerHTML="Modo público: somente visualização";
+
+    mostrar("jogos",btnJogos);
+    render();
+    aplicarPermissoes();
+
+  }catch(e){
+    alert("Erro ao sair: "+e.message);
+  }
 };
 
 onAuthStateChanged(auth,async(user)=>{
@@ -248,17 +288,22 @@ onAuthStateChanged(auth,async(user)=>{
 
     const ref=doc(db,"usuarios",user.uid);
     const snap=await getDoc(ref);
-    if(!snap.exists()) await setDoc(ref,{email:user.email,perfil:"admin"});
+    if(!snap.exists()){
+      await setDoc(ref,{email:user.email,perfil:"admin"});
+    }
 
+    loginTela.style.display="none";
+    appTela.style.display="block";
     status.innerHTML=`Logado: ${user.email} | ADMIN`;
+
   }else{
-    perfil="publico";
     if(user) await signOut(auth);
+
+    perfil="publico";
+    loginTela.style.display="none";
+    appTela.style.display="block";
     status.innerHTML="Modo público: somente visualização";
   }
-
-  loginTela.style.display="none";
-  appTela.style.display="block";
 
   render();
   aplicarPermissoes();
@@ -316,6 +361,7 @@ window.mostrar=(id,el)=>{
 };
 
 window.addTime=async()=>{
+  if(!podeEditar())return alert("Sem permissão.");
   let n=novoTime.value.trim();
   if(!n)return;
   if(!dados[categoria].times.includes(n))dados[categoria].times.push(n);
@@ -324,6 +370,7 @@ window.addTime=async()=>{
 };
 
 window.addJogador=async()=>{
+  if(!podeEditar())return alert("Sem permissão.");
   let n=novoJogador.value.trim();
   if(!n)return;
   dados[categoria].jogadores.push(n);
@@ -348,6 +395,7 @@ function opcoesGols(valor=0){
 }
 
 window.addLinhaGol=(jogador="",qtd=1)=>{
+  if(!podeEditar())return;
   let div=document.createElement("div");
   div.className="goal-row";
   div.innerHTML=`<select class="golJogador">${opcoesJogadores(jogador)}</select><input class="qtdGolJogador" type="number" min="0" value="${qtd}"><button type="button" onclick="this.parentElement.remove()">X</button>`;
@@ -397,7 +445,7 @@ window.excluirJogo=async(i)=>{
 };
 
 window.salvarFalcao=async()=>{
-  if(!podeEditar())return;
+  if(!podeEditar())return alert("Sem permissão.");
   let i=jogoSel.value;
   if(i==="")return alert("Selecione um jogo.");
 
@@ -410,7 +458,7 @@ window.salvarFalcao=async()=>{
 };
 
 function classeResultado(g){
-  if(!["Furacão CL"].includes(g.timeA) && !["Furacão CL"].includes(g.timeB)) return "";
+  if(g.timeA!=="Furacão CL" && g.timeB!=="Furacão CL")return "";
   let furacaoGols=g.timeA==="Furacão CL"?g.golsA:g.golsB;
   let outroGols=g.timeA==="Furacão CL"?g.golsB:g.golsA;
   if(furacaoGols>outroGols)return"win";
@@ -433,9 +481,7 @@ function render(){
     gO.innerHTML=opcoesGols();
   }
 
-  let jogosFuracao=d.jogos
-    .map((g,i)=>({g,i}))
-    .filter(x=>x.g.timeA==="Furacão CL" || x.g.timeB==="Furacão CL");
+  let jogosFuracao=d.jogos.map((g,i)=>({g,i})).filter(x=>x.g.timeA==="Furacão CL" || x.g.timeB==="Furacão CL");
 
   jogoSel.innerHTML='<option value="">Selecione</option>'+
     jogosFuracao.map(x=>`<option value="${x.i}">${x.g.timeA} ${x.g.golsA} x ${x.g.golsB} ${x.g.timeB}</option>`).join("");
@@ -444,7 +490,7 @@ function render(){
     <div class="game ${classeResultado(g)}">
       <b>${g.timeA} ${g.golsA} x ${g.golsB} ${g.timeB}</b><br>
       Local: ${g.local||"-"}<br>
-      Craque: ${g.craque||"-"}<br>
+      Craque: ${g.craque||"-"}<br><br>
       <b>Gols por jogador</b><br>
       ${(g.golsJogadores||[]).map(j=>`${j.jogador}: ${j.gols}`).join("<br>") || "-"}
       ${podeEditar()?`<button class="small" onclick="excluirJogo(${i})">Excluir jogo</button>`:""}
