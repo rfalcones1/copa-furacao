@@ -184,6 +184,7 @@ const db = getFirestore(app);
 
 const ADMIN_EMAIL="ricardo1.falcao@hotmail.com";
 const dadosRef=doc(db,"copa","dados");
+const statusEl=document.getElementById("status");
 
 let categoria="sub11";
 let perfil="publico";
@@ -228,14 +229,14 @@ function aplicarPermissoes(){
 window.abrirLogin=()=>{
   loginTela.style.display="block";
   appTela.style.display="none";
-  status.innerHTML="Login do administrador";
+  statusEl.innerHTML="Login do administrador";
 };
 
 window.voltarPublico=()=>{
   perfil="publico";
   loginTela.style.display="none";
   appTela.style.display="block";
-  status.innerHTML="Modo público: somente visualização";
+  statusEl.innerHTML="Modo público: somente visualização";
   mostrar("jogos",btnJogos);
   render();
   aplicarPermissoes();
@@ -254,7 +255,7 @@ window.login=async()=>{
     perfil="admin";
     loginTela.style.display="none";
     appTela.style.display="block";
-    status.innerHTML=`Logado: ${userCred.user.email} | ADMIN`;
+    statusEl.innerHTML=`Logado: ${userCred.user.email} | ADMIN`;
 
     render();
     aplicarPermissoes();
@@ -271,7 +272,7 @@ window.logout=async()=>{
     perfil="publico";
     loginTela.style.display="none";
     appTela.style.display="block";
-    status.innerHTML="Modo público: somente visualização";
+    statusEl.innerHTML="Modo público: somente visualização";
 
     mostrar("jogos",btnJogos);
     render();
@@ -283,30 +284,35 @@ window.logout=async()=>{
 };
 
 onAuthStateChanged(auth,async(user)=>{
-  if(user && user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase()){
-    perfil="admin";
+  try{
+    if(user && user.email && user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase()){
+      perfil="admin";
 
-    const ref=doc(db,"usuarios",user.uid);
-    const snap=await getDoc(ref);
-    if(!snap.exists()){
-      await setDoc(ref,{email:user.email,perfil:"admin"});
+      const ref=doc(db,"usuarios",user.uid);
+      const snap=await getDoc(ref);
+
+      if(!snap.exists()){
+        await setDoc(ref,{email:user.email,perfil:"admin"});
+      }
+
+      loginTela.style.display="none";
+      appTela.style.display="block";
+      statusEl.innerHTML=`Logado: ${user.email} | ADMIN`;
+
+    }else{
+      perfil="publico";
+
+      loginTela.style.display="none";
+      appTela.style.display="block";
+      statusEl.innerHTML="Modo público: somente visualização";
     }
 
-    loginTela.style.display="none";
-    appTela.style.display="block";
-    status.innerHTML=`Logado: ${user.email} | ADMIN`;
+    render();
+    aplicarPermissoes();
 
-  }else{
-    if(user) await signOut(auth);
-
-    perfil="publico";
-    loginTela.style.display="none";
-    appTela.style.display="block";
-    status.innerHTML="Modo público: somente visualização";
+  }catch(e){
+    alert("Erro de autenticação: "+e.message);
   }
-
-  render();
-  aplicarPermissoes();
 });
 
 onSnapshot(dadosRef,async(snap)=>{
